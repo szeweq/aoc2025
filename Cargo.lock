@@ -3,10 +3,6 @@
 version = 4
 
 [[package]]
-name = "aoc2025"
-version = "0.1.0"
-
-[[package]]
 name = "common"
 version = "0.1.0"
 

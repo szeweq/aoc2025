@@ -15,16 +15,19 @@ fn main() {
 fn parse_input(input: &str) -> Vec<Instruction> {
     input
         .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty())
-        .map(|line| {
-            let (dir, amount_str) = line.split_at(1);
-            let amount: i32 = amount_str.parse().expect("Invalid number");
-            match dir {
-                "L" => Instruction::Left(amount),
-                "R" => Instruction::Right(amount),
-                _ => panic!("Invalid direction"),
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            if trimmed.len() < 2 {
+                return None;
             }
+            let dir = trimmed.as_bytes()[0];
+            let amount: i32 = trimmed[1..].parse().expect("Invalid number");
+            assert!(amount >= 0, "Invalid amount");
+            Some(match dir {
+                b'L' => Instruction::Left(amount),
+                b'R' => Instruction::Right(amount),
+                _ => panic!("Invalid direction"),
+            })
         })
         .collect()
 }
@@ -34,14 +37,11 @@ fn solve_part1(instructions: &[Instruction]) -> usize {
     let mut zero_count = 0;
 
     for instruction in instructions {
-        match instruction {
-            Instruction::Left(amount) => {
-                current_pos = (current_pos - amount).rem_euclid(100);
-            }
-            Instruction::Right(amount) => {
-                current_pos = (current_pos + amount).rem_euclid(100);
-            }
+        current_pos = match instruction {
+            Instruction::Left(amount) => current_pos - amount,
+            Instruction::Right(amount) => current_pos + amount,
         }
+        .rem_euclid(100);
 
         if current_pos == 0 {
             zero_count += 1;
@@ -72,11 +72,12 @@ fn solve_part2(instructions: &[Instruction]) -> i32 {
             zero_count += 1 + (amount - first_hit) / 100;
         }
 
-        if is_left {
-            current_pos = (current_pos - amount).rem_euclid(100);
+        current_pos = if is_left {
+            current_pos - amount
         } else {
-            current_pos = (current_pos + amount).rem_euclid(100);
+            current_pos + amount
         }
+        .rem_euclid(100);
     }
 
     zero_count

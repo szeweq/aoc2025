@@ -37,6 +37,9 @@ dependencies = [
 [[package]]
 name = "day05"
 version = "0.1.0"
+dependencies = [
+ "macros",
+]
 
 [[package]]
 name = "day06"

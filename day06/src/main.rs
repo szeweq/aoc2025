@@ -19,12 +19,12 @@ impl Operator {
 
 #[derive(Debug)]
 struct Problem {
-    numbers: Vec<u128>,
+    numbers: Vec<u64>,
     operator: Operator,
 }
 
 impl Problem {
-    fn solve(self) -> u128 {
+    fn solve(self) -> u64 {
         let num_iter = self.numbers.into_iter();
         match self.operator {
             Operator::Add => num_iter.sum(),
@@ -117,7 +117,7 @@ fn parse_part1_problems(
             };
 
             let trimmed = slice.trim();
-            if let Ok(num) = trimmed.parse::<u128>() {
+            if let Ok(num) = trimmed.parse::<u64>() {
                 numbers.push(num);
             }
         }
@@ -139,7 +139,7 @@ fn parse_part2_problems(
         let height = lines.len();
         // Iterate columns from right to left within the range
         for col in (range.start..range.end).rev() {
-            let mut num_val: u128 = 0;
+            let mut num_val: u64 = 0;
             let mut has_digits = false;
 
             // Collect digits from top rows (0 to height-2)
@@ -148,7 +148,7 @@ fn parse_part2_problems(
                 if col < bytes.len() {
                     let b = bytes[col];
                     if b.is_ascii_digit() {
-                        num_val = num_val * 10 + (b - b'0') as u128;
+                        num_val = num_val * 10 + (b - b'0') as u64;
                         has_digits = true;
                     }
                 }
@@ -163,7 +163,7 @@ fn parse_part2_problems(
     })
 }
 
-fn solve_problems(problems: impl Iterator<Item = Problem>) -> u128 {
+fn solve_problems(problems: impl Iterator<Item = Problem>) -> u64 {
     problems.map(Problem::solve).sum()
 }
 

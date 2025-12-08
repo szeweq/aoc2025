@@ -9,7 +9,7 @@ fn main() {
 }
 
 fn parse_input(content: &str) -> Vec<&[u8]> {
-    content.lines().map(|line| line.as_bytes()).collect()
+    content.lines().map(str::as_bytes).collect()
 }
 
 fn solve(grid: &[&[u8]], part2: bool) -> u64 {
@@ -32,7 +32,7 @@ fn solve(grid: &[&[u8]], part2: bool) -> u64 {
     for r in 0..rows - 1 {
         // Part 1: deduplicate beams (merge timelines)
         if !part2 {
-            for count in beams.iter_mut() {
+            for count in &mut beams {
                 if *count > 0 {
                     *count = 1;
                 }

@@ -18,8 +18,8 @@ fn main() {
         total_part2 += solve_bank::<12>(&digits);
     }
 
-    println!("Part 1 Result: {}", total_part1);
-    println!("Part 2 Result: {}", total_part2);
+    println!("Part 1 Result: {total_part1}");
+    println!("Part 2 Result: {total_part2}");
 }
 
 fn solve_bank<const K: usize>(digits: &[u8]) -> u64 {

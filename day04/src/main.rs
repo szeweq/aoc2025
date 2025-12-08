@@ -18,7 +18,7 @@ impl Grid {
                 cells.push(match c {
                     '.' => false,
                     '@' => true,
-                    _ => panic!("Invalid character in grid: {}", c),
+                    _ => panic!("Invalid character in grid: {c}"),
                 });
             }
         }
@@ -30,11 +30,11 @@ impl Grid {
         }
     }
 
-    fn get(&self, x: isize, y: isize) -> bool {
-        if x < 0 || y < 0 || x >= self.width as isize || y >= self.height as isize {
+    fn get(&self, x: usize, y: usize) -> bool {
+        if x >= self.width || y >= self.height {
             return false;
         }
-        self.cells[y as usize * self.width + x as usize]
+        self.cells[y * self.width + x]
     }
 
     fn clear(&mut self, indices: &[usize]) {
@@ -56,7 +56,13 @@ impl Grid {
         ];
         let mut count = 0;
         for (dx, dy) in DIRS {
-            if self.get(x as isize + dx, y as isize + dy) {
+            let Some(x) = x.checked_add_signed(dx) else {
+                continue;
+            };
+            let Some(y) = y.checked_add_signed(dy) else {
+                continue;
+            };
+            if self.get(x, y) {
                 count += 1;
             }
         }
@@ -67,7 +73,7 @@ impl Grid {
         let mut accessible = Vec::new();
         for y in 0..self.height {
             for x in 0..self.width {
-                if self.get(x as isize, y as isize) && self.count_neighbors(x, y) < 4 {
+                if self.get(x, y) && self.count_neighbors(x, y) < 4 {
                     accessible.push(y * self.width + x);
                 }
             }

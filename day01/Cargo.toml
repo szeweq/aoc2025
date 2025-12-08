@@ -8,4 +8,3 @@ macros.workspace = true
 
 [lints.clippy]
 nursery = "warn"
-pedantic = "warn"

@@ -59,7 +59,7 @@ fn parse_raw_input(input: &str) -> (Vec<&str>, &str, Vec<Range<usize>>) {
     for col in 0..max_len {
         let mut is_empty_col = true;
 
-        for line in lines.iter() {
+        for line in &lines {
             let bytes = line.as_bytes();
             if col < bytes.len() && bytes[col] != b' ' {
                 is_empty_col = false;

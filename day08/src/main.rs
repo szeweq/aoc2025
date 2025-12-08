@@ -44,7 +44,9 @@ impl UnionFind {
         let root_i = self.find(i);
         let root_j = self.find(j);
 
-        if root_i != root_j {
+        if root_i == root_j {
+            false
+        } else {
             if self.nodes[root_i].1 < self.nodes[root_j].1 {
                 self.nodes[root_i].0 = root_j;
                 self.nodes[root_j].1 += self.nodes[root_i].1;
@@ -53,8 +55,6 @@ impl UnionFind {
                 self.nodes[root_i].1 += self.nodes[root_j].1;
             }
             true
-        } else {
-            false
         }
     }
 }

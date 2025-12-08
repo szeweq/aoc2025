@@ -20,24 +20,22 @@ impl Pt {
 }
 
 struct UnionFind {
-    parent: Vec<usize>,
-    size: Vec<usize>,
+    nodes: Box<[(usize, usize)]>,
 }
 
 impl UnionFind {
     fn new(n: usize) -> Self {
         Self {
-            parent: (0..n).collect(),
-            size: vec![1; n],
+            nodes: (0..n).map(|i| (i, 1)).collect(),
         }
     }
 
     fn find(&mut self, i: usize) -> usize {
-        if self.parent[i] == i {
+        if self.nodes[i].0 == i {
             i
         } else {
-            let root = self.find(self.parent[i]);
-            self.parent[i] = root;
+            let root = self.find(self.nodes[i].0);
+            self.nodes[i].0 = root;
             root
         }
     }
@@ -47,12 +45,12 @@ impl UnionFind {
         let root_j = self.find(j);
 
         if root_i != root_j {
-            if self.size[root_i] < self.size[root_j] {
-                self.parent[root_i] = root_j;
-                self.size[root_j] += self.size[root_i];
+            if self.nodes[root_i].1 < self.nodes[root_j].1 {
+                self.nodes[root_i].0 = root_j;
+                self.nodes[root_j].1 += self.nodes[root_i].1;
             } else {
-                self.parent[root_j] = root_i;
-                self.size[root_i] += self.size[root_j];
+                self.nodes[root_j].0 = root_i;
+                self.nodes[root_i].1 += self.nodes[root_j].1;
             }
             true
         } else {
@@ -136,7 +134,7 @@ fn solve_part1(points: &[Pt], connections: usize) -> usize {
     for i in 0..points.len() {
         let root = uf.find(i);
         if visited_roots.insert(root) {
-            sizes.push(uf.size[root]);
+            sizes.push(uf.nodes[root].1);
         }
     }
 

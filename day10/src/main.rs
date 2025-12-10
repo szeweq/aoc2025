@@ -51,7 +51,7 @@ fn main() {
         }
 
         // Parse Joltage (P2 Target) { 1, 2, 3 }
-        let target_p2: Vec<i64> = if let Some(brace_start) = remaining.find('{') {
+        let target_p2: Vec<i64> = remaining.find('{').map_or_else(Vec::new, |brace_start| {
             let brace_end = remaining[brace_start..]
                 .find('}')
                 .expect("Missing closing brace for joltage requirements");
@@ -68,9 +68,7 @@ fn main() {
                     })
                     .collect()
             }
-        } else {
-            Vec::new()
-        };
+        });
         let num_joltage_reqs = target_p2.len();
 
         // Construct P1 Buttons
@@ -181,8 +179,8 @@ fn solve(target: Vec<u8>, buttons: Vec<Vec<u8>>) -> Option<usize> {
 
     // Check for consistency
     // Any row starting with zeros must have a zero in the augmented column
-    for r in pivot_row..num_lights {
-        if matrix[r][num_buttons] == 1 {
+    for r in &matrix[pivot_row..num_lights] {
+        if r[num_buttons] == 1 {
             return None; // 0 = 1, impossible
         }
     }
@@ -292,16 +290,10 @@ fn solve_part2(target: Vec<i64>, buttons: Vec<Vec<i64>>) -> Option<i64> {
 
     // Check for consistency
     // Rows from pivot_row onwards should be all zeros (including RHS)
-    for r in pivot_row..num_requirements {
-        if matrix[r][num_buttons] != 0 {
+    for r in &matrix[pivot_row..num_requirements] {
+        if r[num_buttons] != 0 {
             // Check if LHS is all zero
-            let mut all_zero = true;
-            for c in 0..num_buttons {
-                if matrix[r][c] != 0 {
-                    all_zero = false;
-                    break;
-                }
-            }
+            let all_zero = r.iter().all(|&x| x == 0);
             if all_zero {
                 return None; // 0 != non-zero
             }

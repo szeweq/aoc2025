@@ -3,40 +3,80 @@ use std::collections::{HashSet, VecDeque};
 
 fn main() {
     const INPUT: &str = aoc_input!();
+
+    let machines = INPUT
+        .lines()
+        .map(parse_line)
+        .filter(|m| !m.lights.is_empty())
+        .collect::<Vec<_>>();
+
     let mut total_presses_p1 = 0;
     let mut total_presses_p2 = 0;
 
-    for (line_idx, line) in INPUT.lines().enumerate() {
-        if line.trim().is_empty() {
-            continue;
-        }
-
-        let machine = parse_line(line);
-
+    for (line_idx, machine) in machines.iter().enumerate() {
         // Part 1: BFS
-        if !machine.lights.is_empty() {
-            match solve_part1_bfs(
-                &machine.lights,
-                &machine.buttons_p1_vectors(machine.lights.len()),
-            ) {
-                Some(p) => total_presses_p1 += p,
-                None => eprintln!("Line {}: No solution for Part 1", line_idx + 1),
-            }
-        }
-
-        // Part 2: ILP
-        if !machine.joltage.is_empty() {
-            let p2_vectors = machine.buttons_p2_vectors(machine.joltage.len());
-            // Only solve if we have buttons for P2 (which we always should if parsed correctly)
-            match solve_part2(machine.joltage, p2_vectors) {
-                Some(p) => total_presses_p2 += p,
-                None => eprintln!("Line {}: No solution for Part 2", line_idx + 1),
-            }
+        match solve_part1_bfs(
+            &machine.lights,
+            &machine.buttons_p1_matrix(machine.lights.len()),
+        ) {
+            Some(p) => total_presses_p1 += p,
+            None => eprintln!("Line {}: No solution for Part 1", line_idx + 1),
         }
     }
 
     println!("Total presses Part 1: {}", total_presses_p1);
+
+    for (line_idx, machine) in machines.into_iter().enumerate() {
+        // Part 2: ILP
+        let p2_matrix = machine.buttons_p2_matrix(machine.joltage.len());
+        // Only solve if we have buttons for P2 (which we always should if parsed correctly)
+        match solve_part2(machine.joltage, p2_matrix) {
+            Some(p) => total_presses_p2 += p,
+            None => eprintln!("Line {}: No solution for Part 2", line_idx + 1),
+        }
+    }
+
     println!("Total presses Part 2: {}", total_presses_p2);
+}
+
+struct Matrix<T> {
+    data: Box<[T]>,
+    offset: usize,
+}
+
+impl<T> Matrix<T> {
+    fn new(rows: usize, cols: usize) -> Self
+    where
+        T: Default + Clone,
+    {
+        Self {
+            data: vec![T::default(); rows * cols].into_boxed_slice(),
+            offset: cols,
+        }
+    }
+
+    fn get(&self, row: usize, col: usize) -> &T {
+        &self.data[row * self.offset + col]
+    }
+
+    fn set(&mut self, row: usize, col: usize, value: T) {
+        self.data[row * self.offset + col] = value;
+    }
+
+    fn swap_rows(&mut self, r1: usize, r2: usize) {
+        if r1 == r2 {
+            return;
+        }
+        let cols = self.offset;
+        for c in 0..cols {
+            self.data.swap(r1 * cols + c, r2 * cols + c);
+        }
+    }
+
+    fn row_slice(&self, row: usize) -> &[T] {
+        let start = row * self.offset;
+        &self.data[start..start + self.offset]
+    }
 }
 
 struct Machine {
@@ -46,34 +86,32 @@ struct Machine {
 }
 
 impl Machine {
-    fn buttons_p1_vectors(&self, size: usize) -> Vec<Vec<u8>> {
-        self.button_indices
-            .iter()
-            .map(|indices| {
-                let mut vec = vec![0u8; size];
-                for &idx in indices {
-                    if idx < size {
-                        vec[idx] = 1;
-                    }
+    fn buttons_p1_matrix(&self, size: usize) -> Matrix<u8> {
+        let num_buttons = self.button_indices.len();
+        // For BFS, we iterate buttons. Store buttons as rows for easy slicing.
+        let mut matrix = Matrix::new(num_buttons, size);
+        for (btn_idx, indices) in self.button_indices.iter().enumerate() {
+            for &light_idx in indices {
+                if light_idx < size {
+                    matrix.set(btn_idx, light_idx, 1);
                 }
-                vec
-            })
-            .collect()
+            }
+        }
+        matrix
     }
 
-    fn buttons_p2_vectors(&self, size: usize) -> Vec<Vec<i64>> {
-        self.button_indices
-            .iter()
-            .map(|indices| {
-                let mut vec = vec![0i64; size];
-                for &idx in indices {
-                    if idx < size {
-                        vec[idx] = 1;
-                    }
+    fn buttons_p2_matrix(&self, size: usize) -> Matrix<i128> {
+        let num_buttons = self.button_indices.len();
+        // For Linear Algebra, buttons are columns.
+        let mut matrix = Matrix::new(size, num_buttons);
+        for (btn_idx, indices) in self.button_indices.iter().enumerate() {
+            for &req_idx in indices {
+                if req_idx < size {
+                    matrix.set(req_idx, btn_idx, 1);
                 }
-                vec
-            })
-            .collect()
+            }
+        }
+        matrix
     }
 }
 
@@ -146,7 +184,7 @@ fn parse_line(line: &str) -> Machine {
 }
 
 // Part 1: BFS Solver
-fn solve_part1_bfs(target: &[u8], buttons: &[Vec<u8>]) -> Option<usize> {
+fn solve_part1_bfs(target: &[u8], buttons: &Matrix<u8>) -> Option<usize> {
     let num_lights = target.len();
     let start_state = vec![0u8; num_lights];
 
@@ -165,7 +203,10 @@ fn solve_part1_bfs(target: &[u8], buttons: &[Vec<u8>]) -> Option<usize> {
             return Some(depth);
         }
 
-        for button in buttons {
+        // buttons are rows in P1 matrix
+        let num_buttons = buttons.data.len() / buttons.offset;
+        for b_idx in 0..num_buttons {
+            let button = buttons.row_slice(b_idx);
             let mut next_state = state.clone();
             // Apply button (XOR)
             for i in 0..num_lights {
@@ -181,18 +222,19 @@ fn solve_part1_bfs(target: &[u8], buttons: &[Vec<u8>]) -> Option<usize> {
 }
 
 // Part 2: ILP Solver (Gaussian + Search)
-fn solve_part2(target: Vec<i64>, buttons: Vec<Vec<i64>>) -> Option<i64> {
+fn solve_part2(target: Vec<i64>, buttons: Matrix<i128>) -> Option<i64> {
     let num_requirements = target.len();
-    let num_buttons = buttons.len();
+    let num_buttons = buttons.offset; // buttons are columns in P2 matrix
 
     // Matrix in i128 for precision. [A | b]
-    let mut matrix = vec![vec![0i128; num_buttons + 1]; num_requirements];
+    // We construct augmented matrix from input A
+    let mut matrix = Matrix::new(num_requirements, num_buttons + 1);
 
     for r in 0..num_requirements {
         for c in 0..num_buttons {
-            matrix[r][c] = buttons[c][r] as i128;
+            matrix.set(r, c, *buttons.get(r, c));
         }
-        matrix[r][num_buttons] = target[r] as i128;
+        matrix.set(r, num_buttons, target[r] as i128);
     }
 
     // Fraction-free Gaussian Elimination (Forward)
@@ -206,19 +248,22 @@ fn solve_part2(target: Vec<i64>, buttons: Vec<Vec<i64>>) -> Option<i64> {
 
         // Find pivot
         let mut row = pivot_row;
-        while row < num_requirements && matrix[row][c] == 0 {
+        while row < num_requirements && *matrix.get(row, c) == 0 {
             row += 1;
         }
 
         if row < num_requirements {
-            matrix.swap(pivot_row, row);
-            let pivot_val = matrix[pivot_row][c];
+            matrix.swap_rows(pivot_row, row);
+            let pivot_val = *matrix.get(pivot_row, c);
 
             for r in pivot_row + 1..num_requirements {
-                if matrix[r][c] != 0 {
-                    let factor = matrix[r][c];
+                let val_r_c = *matrix.get(r, c);
+                if val_r_c != 0 {
+                    let factor = val_r_c;
                     for k in c..=num_buttons {
-                        matrix[r][k] = matrix[r][k] * pivot_val - matrix[pivot_row][k] * factor;
+                        let new_val =
+                            *matrix.get(r, k) * pivot_val - *matrix.get(pivot_row, k) * factor;
+                        matrix.set(r, k, new_val);
                     }
                 }
             }
@@ -229,9 +274,19 @@ fn solve_part2(target: Vec<i64>, buttons: Vec<Vec<i64>>) -> Option<i64> {
     }
 
     // Check consistency
-    for r in &matrix[pivot_row..num_requirements] {
-        if r[num_buttons] != 0 && r.iter().take(num_buttons).all(|&x| x == 0) {
-            return None;
+    for r in pivot_row..num_requirements {
+        if *matrix.get(r, num_buttons) != 0 {
+            // Check if LHS is all zero
+            let mut all_zero = true;
+            for c in 0..num_buttons {
+                if *matrix.get(r, c) != 0 {
+                    all_zero = false;
+                    break;
+                }
+            }
+            if all_zero {
+                return None;
+            }
         }
     }
 
@@ -248,7 +303,7 @@ fn solve_part2(target: Vec<i64>, buttons: Vec<Vec<i64>>) -> Option<i64> {
         idx: usize,
         free_vars: &Vec<usize>,
         free_vals: &mut Vec<i64>,
-        matrix: &Vec<Vec<i128>>,
+        matrix: &Matrix<i128>,
         pivot_col_to_row: &std::collections::HashMap<usize, usize>,
         num_buttons: usize,
         min_total: &mut Option<i64>,
@@ -276,11 +331,11 @@ fn solve_part2(target: Vec<i64>, buttons: Vec<Vec<i64>>) -> Option<i64> {
                     .find(|&(_, &pr)| pr == r)
                     .map(|(c, _)| *c)
                     .unwrap();
-                let pivot_val = matrix[r][pc];
+                let pivot_val = *matrix.get(r, pc);
 
-                let mut rhs = matrix[r][num_buttons];
+                let mut rhs = *matrix.get(r, num_buttons);
                 for k in pc + 1..num_buttons {
-                    rhs -= matrix[r][k] * x[k];
+                    rhs -= *matrix.get(r, k) * x[k];
                 }
 
                 if rhs % pivot_val != 0 {
@@ -344,28 +399,51 @@ mod tests {
     #[test]
     fn test_part1_example_1() {
         let target = vec![0, 1, 1, 0];
-        let buttons = vec![
-            vec![0, 0, 0, 1],
-            vec![0, 1, 0, 1],
-            vec![0, 0, 1, 0],
-            vec![0, 0, 1, 1],
-            vec![1, 0, 1, 0],
-            vec![1, 1, 0, 0],
-        ];
+        // buttons as Matrix (rows = buttons, cols = lights)
+        let mut buttons = Matrix::new(6, 4);
+        /*
+        vec![0, 0, 0, 1],
+        vec![0, 1, 0, 1],
+        vec![0, 0, 1, 0],
+        vec![0, 0, 1, 1],
+        vec![1, 0, 1, 0],
+        vec![1, 1, 0, 0],
+        */
+        let data = Box::new([
+            0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+        ]);
+        buttons.data = data;
+
         assert_eq!(solve_part1_bfs(&target, &buttons), Some(2));
     }
 
     #[test]
     fn test_part2_example_1() {
         let target = vec![3, 5, 4, 7];
-        let buttons = vec![
+        // buttons as Matrix (rows = reqs=4, cols = buttons=6)
+        let mut buttons = Matrix::new(4, 6);
+        /*
+        Buttons (cols):
             vec![0, 0, 0, 1],
             vec![0, 1, 0, 1],
             vec![0, 0, 1, 0],
             vec![0, 0, 1, 1],
             vec![1, 0, 1, 0],
             vec![1, 1, 0, 0],
+        */
+        // Rows:
+        /*
+        R0: 0 0 0 0 1 1
+        R1: 0 1 0 0 0 1
+        R2: 0 0 1 1 1 0
+        R3: 1 1 0 1 0 0
+        */
+        let data = vec![
+            0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0,
         ];
+        // Convert to i128
+        buttons.data = data.into_iter().map(|x| x as i128).collect();
+
         assert_eq!(solve_part2(target, buttons), Some(10));
     }
 }

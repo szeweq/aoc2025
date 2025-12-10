@@ -239,9 +239,10 @@ fn solve_part2(target: Vec<i64>, buttons: Matrix<i128>) -> Option<i64> {
 
     // Fraction-free Gaussian Elimination (Forward)
     let mut pivot_row = 0;
-    let mut pivot_col_to_row = std::collections::HashMap::new();
+    let mut pivot_cols = Vec::with_capacity(num_requirements);
+    let mut is_pivot_col = vec![false; num_buttons];
 
-    for c in 0..num_buttons {
+    for (c, is_pivot) in is_pivot_col.iter_mut().enumerate() {
         if pivot_row >= num_requirements {
             break;
         }
@@ -268,7 +269,8 @@ fn solve_part2(target: Vec<i64>, buttons: Matrix<i128>) -> Option<i64> {
                 }
             }
 
-            pivot_col_to_row.insert(c, pivot_row);
+            pivot_cols.push(c);
+            *is_pivot = true;
             pivot_row += 1;
         }
     }
@@ -291,9 +293,7 @@ fn solve_part2(target: Vec<i64>, buttons: Matrix<i128>) -> Option<i64> {
     }
 
     // Identify free variables
-    let free_vars: Vec<usize> = (0..num_buttons)
-        .filter(|c| !pivot_col_to_row.contains_key(c))
-        .collect();
+    let free_vars: Vec<usize> = (0..num_buttons).filter(|&c| !is_pivot_col[c]).collect();
 
     let mut min_total: Option<i64> = None;
     let mut current_free_vals = vec![0i64; free_vars.len()];
@@ -304,7 +304,7 @@ fn solve_part2(target: Vec<i64>, buttons: Matrix<i128>) -> Option<i64> {
         free_vars: &Vec<usize>,
         free_vals: &mut Vec<i64>,
         matrix: &Matrix<i128>,
-        pivot_col_to_row: &std::collections::HashMap<usize, usize>,
+        pivot_cols: &[usize],
         num_buttons: usize,
         min_total: &mut Option<i64>,
     ) {
@@ -318,19 +318,12 @@ fn solve_part2(target: Vec<i64>, buttons: Matrix<i128>) -> Option<i64> {
             }
 
             // Back substitution for pivots
-            // Need to solve rows in correct order (effectively bottom-up of pivots)
-            // Or just iterate num_pivots-1 down to 0, finding the col for that row.
-            // pivot_col_to_row maps C -> R. We need to find C given R.
-            let num_pivots = pivot_col_to_row.len();
+            // Iterate rows from bottom up in the pivot set.
+            // pivot_cols[r] gives the pivot column for row r.
+            let num_pivots = pivot_cols.len();
 
-            // Slow lookup? It's small.
             for r in (0..num_pivots).rev() {
-                // Find pivot column for this row
-                let pc = pivot_col_to_row
-                    .iter()
-                    .find(|&(_, &pr)| pr == r)
-                    .map(|(c, _)| *c)
-                    .unwrap();
+                let pc = pivot_cols[r];
                 let pivot_val = *matrix.get(r, pc);
 
                 let mut rhs = *matrix.get(r, num_buttons);
@@ -372,7 +365,7 @@ fn solve_part2(target: Vec<i64>, buttons: Matrix<i128>) -> Option<i64> {
                 free_vars,
                 free_vals,
                 matrix,
-                pivot_col_to_row,
+                pivot_cols,
                 num_buttons,
                 min_total,
             );
@@ -384,7 +377,7 @@ fn solve_part2(target: Vec<i64>, buttons: Matrix<i128>) -> Option<i64> {
         &free_vars,
         &mut current_free_vals,
         &matrix,
-        &pivot_col_to_row,
+        &pivot_cols,
         num_buttons,
         &mut min_total,
     );

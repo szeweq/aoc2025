@@ -258,7 +258,7 @@ impl BitGrid {
 }
 // first_empty removed because built into recursion logic
 
-fn solve_part1(shapes_map: &HashMap<usize, Vec<Shape>>, regions: &[Region]) -> usize {
+fn solve(shapes_map: &HashMap<usize, Vec<Shape>>, regions: &[Region]) -> usize {
     let mut count = 0;
 
     // Pre-calculate shape areas for spacer calculation
@@ -276,7 +276,7 @@ fn solve_part1(shapes_map: &HashMap<usize, Vec<Shape>>, regions: &[Region]) -> u
         min_shape_area = 0;
     }
 
-    for (idx, region) in regions.iter().enumerate() {
+    for region in regions {
         let mut grid = BitGrid::new(region.width, region.height);
 
         // Count occurrences of each shape
@@ -292,19 +292,9 @@ fn solve_part1(shapes_map: &HashMap<usize, Vec<Shape>>, regions: &[Region]) -> u
         // Calculate spacers needed
         let grid_area = region.width * region.height;
         if total_shape_area > grid_area {
-            println!(
-                "Region {} Impossible: Area {} > Grid {}",
-                idx, total_shape_area, grid_area
-            );
-
             continue;
         }
         let mut spacers = grid_area - total_shape_area;
-
-        println!(
-            "Region {} ({}x{}): Solving with {} spacers. Shapes Area: {}",
-            idx, region.width, region.height, spacers, total_shape_area
-        );
 
         let mut visited_scratch = BitGrid::new(region.width, region.height);
 
@@ -319,10 +309,7 @@ fn solve_part1(shapes_map: &HashMap<usize, Vec<Shape>>, regions: &[Region]) -> u
             0,
             &mut visited_scratch,
         ) {
-            println!("Region {} Solved!", idx);
             count += 1;
-        } else {
-            println!("Region {} Failed", idx);
         }
     }
     count
@@ -503,10 +490,10 @@ fn prune_dead_space(
 }
 
 fn main() {
-    let input = aoc_input!();
-    let (shapes, regions) = parse_input(input);
+    const INPUT: &str = aoc_input!();
+    let (shapes, regions) = parse_input(INPUT);
 
-    println!("Part 1: {}", solve_part1(&shapes, &regions));
+    println!("Result: {}", solve(&shapes, &regions));
 }
 
 #[cfg(test)]
@@ -550,6 +537,6 @@ mod tests {
     #[test]
     fn test_part1() {
         let (shapes, regions) = parse_input(EXAMPLE);
-        assert_eq!(solve_part1(&shapes, &regions), 2);
+        assert_eq!(solve(&shapes, &regions), 2);
     }
 }

@@ -179,7 +179,7 @@ fn parse_input(input: &str) -> (HashMap<usize, Vec<Shape>>, Vec<Region>) {
 
 // Bitmask grid for performance. Up to 64 width.
 struct BitGrid {
-    rows: Vec<u64>,
+    rows: Box<[u64]>,
     width: usize,
     height: usize,
 }
@@ -187,7 +187,7 @@ struct BitGrid {
 impl BitGrid {
     fn new(width: usize, height: usize) -> Self {
         Self {
-            rows: vec![0; height],
+            rows: vec![0; height].into_boxed_slice(),
             width,
             height,
         }

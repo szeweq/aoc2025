@@ -1,10 +1,11 @@
-use macros::aoc_input;
+use macros::{aoc_input, aoc_timed};
 
 enum Instruction {
-    Left(i32),
-    Right(i32),
+    Left(i16),
+    Right(i16),
 }
 
+#[aoc_timed]
 fn main() {
     const INPUT: &str = aoc_input!();
     let instructions = parse_input(INPUT);
@@ -21,7 +22,7 @@ fn parse_input(input: &str) -> Vec<Instruction> {
                 return None;
             }
             let dir = trimmed.as_bytes()[0];
-            let amount: i32 = trimmed[1..].parse().expect("Invalid number");
+            let amount = trimmed[1..].parse().expect("Invalid number");
             assert!(amount >= 0, "Invalid amount");
             Some(match dir {
                 b'L' => Instruction::Left(amount),
@@ -51,8 +52,8 @@ fn solve_part1(instructions: &[Instruction]) -> usize {
     zero_count
 }
 
-fn solve_part2(instructions: &[Instruction]) -> i32 {
-    let mut current_pos: i32 = 50;
+fn solve_part2(instructions: &[Instruction]) -> i16 {
+    let mut current_pos: i16 = 50;
     let mut zero_count = 0;
 
     for instruction in instructions {

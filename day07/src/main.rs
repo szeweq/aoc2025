@@ -1,5 +1,6 @@
-use macros::aoc_input;
+use macros::{aoc_input, aoc_timed};
 
+#[aoc_timed]
 fn main() {
     const INPUT: &str = aoc_input!();
     let grid = parse_input(INPUT);

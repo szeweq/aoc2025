@@ -1,7 +1,6 @@
 [workspace]
 resolver = "3"
 members = [
-    "common",
     "day01",
     "day02",
     "day03",
@@ -14,7 +13,7 @@ members = [
     "day10",
     "day11",
     "day12",
-    "macros"
+    "macros",
 ]
 
 [workspace.dependencies]

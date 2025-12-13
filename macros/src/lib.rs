@@ -1,36 +1,36 @@
 use proc_macro::TokenStream;
+use quote::quote;
 use std::env;
+use syn::{ItemFn, parse_macro_input};
 
 #[proc_macro]
 pub fn aoc_input(_item: TokenStream) -> TokenStream {
     let pkg_name = env::var("CARGO_PKG_NAME").expect("CARGO_PKG_NAME must be set");
-
-    // Expected format: "dayXX"
     let day_str = pkg_name
         .strip_prefix("day")
         .expect("Package name must start with 'day'");
-
-    // Construct path: "../../input/XX.txt"
-    // We use a relative path from the crate root (where Cargo.toml is).
-    // Since the workspace structure is:
-    // /
-    //   input/
-    //     01.txt
-    //   day01/
-    //     Cargo.toml
-    //     src/
-    //       main.rs
-    //
-    // The path relative to `day01/Cargo.toml` (or where `include_str!` is invoked) needs to be correct.
-    // `include_str!` paths are relative to the file where it's called.
-    // If called in `day01/src/main.rs`, we need `../../input/01.txt`.
-
     let path = format!("../../input/{}.txt", day_str);
-
-    // Verify file existence at compile time
-    // Actually `include_str!` will error if file is missing, satisfying the requirement.
-
     let expanded = format!("include_str!(\"{}\")", path);
-
     expanded.parse().unwrap()
+}
+
+#[proc_macro_attribute]
+pub fn aoc_timed(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input_fn = parse_macro_input!(item as ItemFn);
+    let _fn_name = &input_fn.sig.ident;
+    let fn_body = &input_fn.block;
+    let fn_vis = &input_fn.vis;
+    let fn_sig = &input_fn.sig;
+
+    let expanded = quote! {
+        #fn_vis #fn_sig {
+            let start = std::time::Instant::now();
+            let result = (|| #fn_body)();
+            let duration = start.elapsed();
+            println!("[Duration] {:.2?}", duration);
+            result
+        }
+    };
+
+    TokenStream::from(expanded)
 }

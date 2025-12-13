@@ -1,4 +1,4 @@
-use macros::aoc_input;
+use macros::{aoc_input, aoc_timed};
 use std::collections::HashMap;
 
 type DeviceID = [u8; 3];
@@ -73,6 +73,7 @@ fn solve_part2(graph: &HashMap<DeviceID, Vec<DeviceID>>) -> u64 {
     route_a + route_b
 }
 
+#[aoc_timed]
 fn main() {
     const INPUT: &str = aoc_input!();
     let graph = parse_input(INPUT);

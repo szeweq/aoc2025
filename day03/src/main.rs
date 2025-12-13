@@ -1,5 +1,6 @@
-use macros::aoc_input;
+use macros::{aoc_input, aoc_timed};
 
+#[aoc_timed]
 fn main() {
     const INPUT: &str = aoc_input!();
 
@@ -12,7 +13,7 @@ fn main() {
             continue;
         }
 
-        let digits: Vec<u8> = line.bytes().map(|b| b - b'0').collect();
+        let digits = parse_digits(line);
 
         total_part1 += solve_bank::<2>(&digits);
         total_part2 += solve_bank::<12>(&digits);
@@ -20,6 +21,10 @@ fn main() {
 
     println!("Part 1 Result: {total_part1}");
     println!("Part 2 Result: {total_part2}");
+}
+
+fn parse_digits(input: &str) -> Vec<u8> {
+    input.trim().bytes().map(|b| b - b'0').collect()
 }
 
 fn solve_bank<const K: usize>(digits: &[u8]) -> u64 {
@@ -67,7 +72,7 @@ mod tests {
         let mut total_part1 = 0;
 
         for line in INPUT.lines() {
-            let digits: Vec<u8> = line.bytes().map(|b| b - b'0').collect();
+            let digits = parse_digits(line);
             total_part1 += solve_bank::<2>(&digits);
         }
 
@@ -79,7 +84,7 @@ mod tests {
         let mut total_part2 = 0;
 
         for line in INPUT.lines() {
-            let digits: Vec<u8> = line.bytes().map(|b| b - b'0').collect();
+            let digits = parse_digits(line);
             total_part2 += solve_bank::<12>(&digits);
         }
 

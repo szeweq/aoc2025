@@ -1,4 +1,4 @@
-use macros::aoc_input;
+use macros::{aoc_input, aoc_timed};
 use std::ops::Range;
 
 #[derive(Debug, Clone, Copy)]
@@ -17,7 +17,6 @@ impl Operator {
     }
 }
 
-#[derive(Debug)]
 struct Problem {
     numbers: Vec<u64>,
     operator: Operator,
@@ -33,6 +32,7 @@ impl Problem {
     }
 }
 
+#[aoc_timed]
 fn main() {
     const INPUT: &str = aoc_input!();
     let (lines, operator_line, ranges) = parse_raw_input(INPUT);

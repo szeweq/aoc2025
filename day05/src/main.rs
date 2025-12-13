@@ -1,4 +1,4 @@
-use macros::aoc_input;
+use macros::{aoc_input, aoc_timed};
 use std::cmp;
 use std::ops::RangeInclusive;
 
@@ -75,6 +75,7 @@ fn part2(input: &mut Input) -> u64 {
     merged.iter().map(|r| r.end() - r.start() + 1).sum()
 }
 
+#[aoc_timed]
 fn main() {
     const INPUT: &str = aoc_input!();
     // Normalize input to ensure \n\n splitting works regardless of CRLF
